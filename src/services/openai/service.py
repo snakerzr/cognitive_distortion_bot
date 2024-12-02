@@ -15,26 +15,28 @@ class OpenAIClient:
         system_prompt: str,
         response_schema=None,
         model="gpt-4o-mini",
+        temperature=None,
     ):
         try:
+            request_payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ],
+            }
+
+            if temperature:
+                request_payload["temperature"] = temperature
+
             if response_schema:
                 completion = self.client.beta.chat.completions.parse(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_message},
-                    ],
+                    **request_payload,
                     response_format=response_schema,
                 )
                 return completion.choices[0].message.parsed  # Возвращает анализ со схемой
             else:
-                completion = self.client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_message},
-                    ],
-                )
+                completion = self.client.chat.completions.create(**request_payload)
                 return completion.choices[0].message.content  # Возвращает текст без схемы
         except Exception as e:
             print(f"Ошибка при вызове OpenAI API: {e}")
